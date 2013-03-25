@@ -22,18 +22,13 @@
 
 package org.jboss.marshalling.cloner;
 
-import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
-import java.io.Externalizable;
-import java.io.File;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.NotActiveException;
-import java.io.NotSerializableException;
-import java.io.ObjectInputValidation;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamClass;
+import org.jboss.marshalling.*;
+import org.jboss.marshalling.reflect.SerializableClass;
+import org.jboss.marshalling.reflect.SerializableClassRegistry;
+import org.jboss.marshalling.reflect.SerializableField;
+import org.jboss.marshalling.util.*;
+
+import java.io.*;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -42,41 +37,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
-import org.jboss.marshalling.AbstractObjectInput;
-import org.jboss.marshalling.AbstractObjectOutput;
-import org.jboss.marshalling.ByteInput;
-import org.jboss.marshalling.ByteOutput;
-import org.jboss.marshalling.Marshaller;
-import org.jboss.marshalling.MarshallerObjectInputStream;
-import org.jboss.marshalling.MarshallerObjectOutputStream;
-import org.jboss.marshalling.Marshalling;
-import org.jboss.marshalling.ObjectResolver;
-import org.jboss.marshalling.SerializabilityChecker;
-import org.jboss.marshalling.Unmarshaller;
-import org.jboss.marshalling.reflect.SerializableClass;
-import org.jboss.marshalling.reflect.SerializableClassRegistry;
-import org.jboss.marshalling.reflect.SerializableField;
-import org.jboss.marshalling.util.BooleanReadField;
-import org.jboss.marshalling.util.ByteReadField;
-import org.jboss.marshalling.util.CharReadField;
-import org.jboss.marshalling.util.DoubleReadField;
-import org.jboss.marshalling.util.FloatReadField;
-import org.jboss.marshalling.util.IdentityIntMap;
-import org.jboss.marshalling.util.IntReadField;
-import org.jboss.marshalling.util.Kind;
-import org.jboss.marshalling.util.LongReadField;
-import org.jboss.marshalling.util.ObjectReadField;
-import org.jboss.marshalling.util.ReadField;
-import org.jboss.marshalling.util.ShortReadField;
 
 /**
  * An object cloner which uses serialization methods to clone objects.
@@ -560,6 +522,11 @@ class SerializingCloner implements ObjectCloner {
             final Object subject = this.subject;
             final SerializingCloner.ClonerPutField fields = clonerPutField;
             prepareFields(subject, fields);
+            try {
+                cloneFields(fields);
+            } catch (ClassNotFoundException e) {
+                throw new IOException(e);
+            }
         }
 
         void doFinish() throws IOException {
